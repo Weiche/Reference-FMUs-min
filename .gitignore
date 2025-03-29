@@ -7,3 +7,11 @@ __pycache__
 *_out.csv
 /venv/
 tests/work/
+build/CMakeFiles/
+build/temp/
+build/.cmake/
+build/*ninja*
+*CMakeCache.txt
+*cmake_install.cmake
+build/all.c
+build/compile_commands*

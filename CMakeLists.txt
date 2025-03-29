@@ -10,7 +10,7 @@ ENDFUNCTION()
 project (Reference-FMUs)
 
 set(FMI_VERSION 2 CACHE STRING "FMI Version")
-set_property(CACHE FMI_VERSION PROPERTY STRINGS 1 2 3)
+set_property(CACHE FMI_VERSION PROPERTY STRINGS 2 3) # Remove FMI1.0 Support
 
 set(FMI_TYPE ME CACHE STRING "FMI Type (FMI 1.0 only)")
 set_property(CACHE FMI_TYPE PROPERTY STRINGS ME CS)
@@ -104,10 +104,6 @@ endif ()
 
 set (MODEL_NAMES BouncingBall Dahlquist Stair Feedthrough VanDerPol)
 
-if (${FMI_VERSION} GREATER 1 OR "${FMI_TYPE}" STREQUAL "CS")
-  set (MODEL_NAMES ${MODEL_NAMES} Resource)
-endif ()
-
 if (${FMI_VERSION} GREATER 2)
   set (MODEL_NAMES ${MODEL_NAMES} StateSpace Clocks)
 endif ()
@@ -115,9 +111,10 @@ endif ()
 foreach (MODEL_NAME ${MODEL_NAMES})
 
 set(TARGET_NAME ${MODEL_NAME})
+set(MODEL_PATH fmu_examples/${MODEL_NAME})
 
 SET(HEADERS
-    ${MODEL_NAME}/config.h
+    ${MODEL_PATH}/config.h
     include/cosimulation.h
     include/model.h
 )
@@ -139,7 +136,7 @@ elseif (${FMI_VERSION} EQUAL 3)
 endif()
 
 SET(SOURCES
-  ${MODEL_NAME}/model.c
+  ${MODEL_PATH}/model.c
   src/fmi${FMI_VERSION}Functions.c
   src/cosimulation.c
 )
@@ -147,8 +144,8 @@ SET(SOURCES
 add_library(${TARGET_NAME} SHARED
   ${HEADERS}
   ${SOURCES}
-  ${MODEL_NAME}/FMI${FMI_VERSION}${FMI_TYPE}.xml
-  ${MODEL_NAME}/buildDescription.xml
+  ${MODEL_PATH}/FMI${FMI_VERSION}${FMI_TYPE}.xml
+  ${MODEL_PATH}/buildDescription.xml
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fmus)
@@ -178,7 +175,7 @@ endif()
 
 target_include_directories(${TARGET_NAME} PRIVATE
   include
-  ${MODEL_NAME}
+  ${MODEL_PATH}
 )
 
 set(FMU_BUILD_DIR temp/${MODEL_NAME})
@@ -202,14 +199,14 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # modelDescription.xml
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-  ${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/FMI${FMI_VERSION}${FMI_TYPE}.xml
+  ${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_PATH}/FMI${FMI_VERSION}${FMI_TYPE}.xml
   "${FMU_BUILD_DIR}/modelDescription.xml"
 )
 
 # model specific header and source
 foreach (SOURCE_FILE config.h model.c)
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/${SOURCE_FILE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_PATH}/${SOURCE_FILE}"
     "${FMU_BUILD_DIR}/sources/${SOURCE_FILE}"
   )
 endforeach(SOURCE_FILE)
@@ -238,16 +235,16 @@ if (${FMI_VERSION} LESS 3)
   )
 else()
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/buildDescription.xml"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_PATH}/buildDescription.xml"
     "${FMU_BUILD_DIR}/sources/buildDescription.xml"
   )
 endif()
 
 set(ARCHIVE_FILES "modelDescription.xml" "binaries" "sources")
 
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/resources")
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_PATH}/resources")
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_NAME}/resources"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${MODEL_PATH}/resources"
     "${FMU_BUILD_DIR}/resources/"
   )
   set(ARCHIVE_FILES ${ARCHIVE_FILES} "resources")
@@ -273,10 +270,3 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fmus/${MODEL_NAME}.fmu DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 endforeach(MODEL_NAME)
-
-# Examples
-include(examples/Examples.cmake)
-
-if (WITH_FMUSIM)
-  add_subdirectory(fmusim)
-endif ()
