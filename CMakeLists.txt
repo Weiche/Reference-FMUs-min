@@ -101,12 +101,20 @@ if (${FMI_VERSION} LESS 3)
 #include \"cosimulation.c\"
 ")
 endif ()
-
-set (MODEL_NAMES BouncingBall Dahlquist Stair Feedthrough VanDerPol)
+#
+# Here defines what FMU will be included in the configure
+set (EXAMPLE_MODEL_NAMES  BouncingBall Dahlquist Stair Feedthrough VanDerPol)
 
 if (${FMI_VERSION} GREATER 2)
-  set (MODEL_NAMES ${MODEL_NAMES} StateSpace Clocks)
+set (EXAMPLE_MODEL_NAMES ${EXAMPLE_MODEL_NAMES} StateSpace Clocks)
 endif ()
+
+
+if (IGNORE_EXAMPLES)
+set (MODEL_NAMES ${EXT_MODEL_NAMES})
+else()
+set (MODEL_NAMES ${EXT_MODEL_NAMES} ${EXAMPLE_MODEL_NAMES})
+endif()
 
 foreach (MODEL_NAME ${MODEL_NAMES})
 
